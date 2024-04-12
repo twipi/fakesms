@@ -1,0 +1,40 @@
+version: "3"
+
+set: [pipefail, errexit, nounset]
+
+tasks:
+  default:
+    deps: [dev]
+
+  dev:
+    deps: [generate-ts-proto]
+    cmds:
+      - vite --clearScreen=false
+
+  build:
+    deps: [generate-ts-proto]
+    cmds:
+      - vite build
+
+  generate-ts-proto:
+    watch: true
+    requires:
+      vars: [PROTO_PATH]
+    status:
+      - grep -q "$PROTO_PATH" "$TASK_TEMP_DIR"/proto_path
+    cmds:
+      - for:
+          var: PROTO_PATH
+          split: ":"
+        cmd: |
+          protoc -I={{ shellQuote .ITEM }} \
+            --plugin=node_modules/.bin/protoc-gen-ts_proto \
+            --ts_proto_opt=esModuleInterop=true \
+            --ts_proto_opt=importSuffix=.js \
+            --ts_proto_out=src/lib/proto \
+            {{ shellQuote .ITEM }}/*.proto
+      - prettier -w src/lib/proto
+      - mkdir -p "$TASK_TEMP_DIR"
+      - echo "$PROTO_PATH" > "$TASK_TEMP_DIR"/proto_path
+    generates:
+      - src/lib/proto/*.ts
