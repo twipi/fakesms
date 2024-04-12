@@ -2,17 +2,30 @@ version: "3"
 
 set: [pipefail, errexit, nounset]
 
+vars:
+  WSBRIDGE_URL: ws://localhost:8080/sms/ws
+  WSBRIDGE_NUMBER_SELF: +11234567890
+  WSBRIDGE_NUMBER_SERVER: +19876543210
+
 tasks:
   default:
     deps: [dev]
 
   dev:
     deps: [generate-ts-proto]
+    env:
+      VITE_WSBRIDGE_URL: "{{ .WSBRIDGE_URL }}"
+      VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
+      VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
       - vite --clearScreen=false
 
   build:
     deps: [generate-ts-proto]
+    env:
+      VITE_WSBRIDGE_URL: "{{ .WSBRIDGE_URL }}"
+      VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
+      VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
       - vite build
 
@@ -34,7 +47,6 @@ tasks:
             --ts_proto_out=src/lib/proto \
             {{ shellQuote .ITEM }}/*.proto
       - prettier -w src/lib/proto
-      - mkdir -p "$TASK_TEMP_DIR"
       - echo "$PROTO_PATH" > "$TASK_TEMP_DIR"/proto_path
     generates:
       - src/lib/proto/*.ts

@@ -1,1 +1,16 @@
-@use "@picocss/pico";
+@use "@picocss/pico/scss/pico";
+@use "@picocss/pico/scss/colors" as *;
+@use "@picocss/pico/scss/colors/utilities";
+
+:root {
+  --pico-border-radius: 0.5rem;
+  --pico-border-width: 1.5px;
+  --pico-font-family: "Open Sans", sans-serif;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
