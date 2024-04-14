@@ -5,6 +5,7 @@
   import Avatar from "#/lib/components/Avatar.svelte"
   import { messages, sendMessage, selfNumber, serverNumber } from "#/lib/wsbridge"
   import { addToast } from "#/lib/toasts"
+  import { Message } from "../proto/twisms"
 
   function formatPhoneNumber(number: string): string {
     return number.match(/\+\d{11}/)
@@ -40,6 +41,21 @@
       sendingMessage = false
     }
   }
+
+  // Transform messages to display them in the chat.
+  function transformMessages(messages: Message[]) {
+    let lastMessage: Message | null = null
+    return messages
+      .map((m) => {
+        const transformed = {
+          ...m,
+          collapse: lastMessage?.from == m.from,
+        }
+        lastMessage = m
+        return transformed
+      })
+      .reverse()
+  }
 </script>
 
 <div class="message-view">
@@ -56,8 +72,8 @@
   </header>
 
   <ol class="message-list">
-    {#each $messages.slice().reverse() as message}
-      <li class="message" class:self={message.from == selfNumber}>
+    {#each transformMessages($messages) as message}
+      <li class="message" class:self={message.from == selfNumber} class:collapse={message.collapse}>
         <header>
           <Avatar size={32} color={accountColor[message.from]} />
           <b>{formatPhoneNumber(message.from)}</b>
@@ -138,6 +154,7 @@
 
     .message-input {
       flex: 1;
+
       color: var(--pico-color);
       border: var(--pico-border-width) solid var(--pico-secondary-focus);
       border-right: 0;
@@ -213,48 +230,46 @@
   }
 
   .message-list {
-    margin: var(--pico-spacing);
-    padding: 0;
+    margin: 0;
+    padding: var(--pico-spacing);
     list-style: none;
     box-sizing: border-box;
 
+    overflow-y: auto;
     display: flex;
     flex-direction: column-reverse;
 
     .message {
       background-color: var(--pico-secondary-background);
-      max-width: clamp(300px, 80%, 600px);
       border-radius: var(--pico-border-radius);
-      width: 100%;
+      width: min(500px, 85%);
       padding: calc(var(--pico-spacing) / 2);
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--pico-spacing) / 4);
+      }
+
+      @media (max-width: 350px) {
+        header {
+          display: none;
+        }
+      }
+
+      p {
+        margin: 0;
+      }
 
       &.self {
         background-color: var(--pico-primary-background);
         margin-left: auto;
       }
 
-      header {
-        display: none;
-      }
-
-      p {
-        margin: 0;
-      }
-    }
-
-    .message:not(.self) + .message.self,
-    .message.self + .message:not(.self) {
-      margin-bottom: calc(var(--pico-spacing));
-    }
-
-    .message.self + .message.self,
-    .message:not(.self) + .message:not(.self),
-    .message:last-child,
-    .message:first-child {
-      header {
-        display: flex;
-        align-items: center;
-        gap: calc(var(--pico-spacing) / 4);
+      &.collapse {
+        header {
+          display: none;
+        }
       }
     }
   }
