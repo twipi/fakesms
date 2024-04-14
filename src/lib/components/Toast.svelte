@@ -26,6 +26,7 @@
     padding-left: calc(var(--pico-spacing) / 1.5);
     display: flex;
     gap: calc(var(--pico-spacing) / 2);
+    align-items: center;
     border-radius: var(--pico-border-radius);
 
     width: 100%;
@@ -50,12 +51,17 @@
 
       h3,
       p {
-        font-size: 1em;
-        margin: 0;
+        margin: calc(var(--pico-spacing) / 4) 0;
+        line-height: 1.35;
       }
 
       h3 {
         font-weight: bold;
+        font-size: 1em;
+      }
+
+      p {
+        font-size: 0.95em;
       }
     }
 
