@@ -139,7 +139,7 @@
     .message-input {
       flex: 1;
       color: var(--pico-color);
-      border: var(--pico-border-width) solid var(--pico-secondary-border);
+      border: var(--pico-border-width) solid var(--pico-secondary-focus);
       border-right: 0;
       border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius);
       white-space: pre-wrap;
@@ -147,17 +147,52 @@
       transition: var(--pico-transition);
 
       &:focus {
-        border-color: var(--pico-secondary);
+        border-color: var(--pico-secondary-border);
       }
 
-      &.disabled {
+      position: relative;
+      overflow: hidden;
+
+      // Input placeholder
+      &.empty:not(:focus):not(.disabled)::after {
+        content: "Send message";
+        color: var(--pico-secondary);
+
+        z-index: 1;
+        position: absolute;
+        top: 0;
+        height: 100%;
+        left: 0;
+        padding: 0 calc(var(--pico-spacing) / 1.5);
+        display: flex;
+        align-items: center;
+      }
+
+      --stripes-size: 10px;
+      --stripes-color: var(--pico-secondary-focus);
+
+      // Loading stripes animation
+      &::before {
+        content: "";
+        opacity: 0;
+        z-index: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background-image: repeating-linear-gradient(
           135deg,
-          var(--pico-secondary-border),
-          var(--pico-secondary-border) 10px,
-          transparent 10px,
-          transparent 20px
+          var(--stripes-color),
+          var(--stripes-color) var(--stripes-size),
+          transparent var(--stripes-size),
+          transparent calc(var(--stripes-size) * 2)
         );
+        transition: opacity var(--pico-transition);
+      }
+
+      &.disabled::before {
+        opacity: 1;
       }
     }
 
@@ -174,13 +209,6 @@
 
     .send {
       border-radius: 0 var(--pico-border-radius) var(--pico-border-radius) 0;
-    }
-  }
-
-  .message-input {
-    &.empty:not(:focus)::before {
-      content: "Send message";
-      color: var(--pico-secondary);
     }
   }
 

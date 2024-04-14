@@ -40,14 +40,15 @@ ws.addEventListener("message", (ev: MessageEvent) => {
       return
     }
 
-    if (message.from !== serverNumber) {
+    if (message.from !== serverNumber && message.to !== serverNumber) {
       console.log("dropping message from unknown number", packet.message)
       return
     }
 
-    messages.update((prev) => {
-      const messages = [...prev, message]
-      messages.sort((a, b) => {
+    messages.update((messages) => {
+      messages = [...messages, message]
+      messages = uniq(messages, (m) => JSON.stringify([m.from, m.to, m.timestamp]))
+      messages = sort(messages, (a, b) => {
         const [atime, btime] = [a, b].map((m) => m.timestamp ?? new Date(0))
         return atime.getTime() - btime.getTime()
       })
@@ -61,6 +62,14 @@ ws.addEventListener("message", (ev: MessageEvent) => {
     ack(packet.messageAcknowledgement)
   }
 })
+
+function uniq<T>(arr: T[], key: (_: T) => any) {
+  return [...new Map(arr.map((item) => [key(item), item])).values()]
+}
+
+function sort<T>(arr: T[], key: (a: T, b: T) => number) {
+  return arr.slice().sort(key)
+}
 
 export async function sendMessage(text: string) {
   const ackID = nextAckID()
