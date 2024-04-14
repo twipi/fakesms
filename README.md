@@ -1,8 +1,8 @@
-# fakesms
-
 <div align="center">
-  <img src=".github/screenshot01.png" alt="Screenshot of the app" />
+  <h1>fakesms</h1>
+  <img src=".github/screenshot01.png" alt="Screenshot of the app" width="500" />
 </div>
+<br>
 
 Fake SMS app in [Svelte][svelte] using [the wsbridge-client protocol][wsbridge].
 It serves as a hassle-free way to demonstrate Twipi's capabilities.
