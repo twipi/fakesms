@@ -1,4 +1,5 @@
 import { writable as persisted } from "@macfja/svelte-persistent-store"
+import * as store from "svelte/store"
 import { Message } from "./proto/twisms.js"
 import { WebsocketPacket } from "./proto/wsbridge.js"
 import { addToast } from "./toasts.js"
@@ -24,6 +25,7 @@ function handleEvent(ev: MessageEvent) {
       title: "Server Error",
       message: packet.error.message,
     })
+
     return
   }
 
@@ -32,7 +34,16 @@ function handleEvent(ev: MessageEvent) {
       console.log("dropping message from unknown number", packet.message)
       return
     }
-    messages.update((prev) => [...prev, packet.message!])
+
+    messages.update((prev) => {
+      const messages = [...prev, packet.message!]
+      messages.sort((a, b) => {
+        const [atime, btime] = [a, b].map((m) => m.timestamp ?? new Date(0))
+        return atime.getTime() - btime.getTime()
+      })
+      return messages
+    })
+
     return
   }
 }
@@ -52,7 +63,20 @@ export function sendMessage(text: string) {
 
 ws.binaryType = "blob"
 ws.addEventListener("message", handleEvent)
-ws.addEventListener("open", () => {})
+
+ws.addEventListener("open", () => {
+  const messageList = store.get(messages)
+  const lastSeen = messageList[messageList.length - 1]?.timestamp
+
+  const packet = WebsocketPacket.create({
+    introduction: {
+      phoneNumbers: [selfNumber],
+      since: lastSeen,
+    },
+  })
+  ws.send(WebsocketPacket.encode(packet).finish())
+})
+
 ws.addEventListener("close", () => {
   addToast({
     type: "error",
@@ -60,6 +84,7 @@ ws.addEventListener("close", () => {
     message: "Connection to the server was lost.",
   })
 })
+
 ws.addEventListener("error", (ev) => {
   console.error("websocket error", ev)
 })

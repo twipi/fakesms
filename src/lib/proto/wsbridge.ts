@@ -1,12 +1,28 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal.js"
+import { Timestamp } from "./google/protobuf/timestamp.js"
 import { Message } from "./twisms.js"
 
 export const protobufPackage = "wsbridge"
 
 export interface WebsocketPacket {
+  introduction?: Introduction | undefined
   error?: Error | undefined
   message?: Message | undefined
+}
+
+/** The first message that the client sends to the server. */
+export interface Introduction {
+  /**
+   * The phone numbers that the client is connecting with.
+   * Only messages delivered to this phone number will be sent to the client.
+   */
+  phoneNumbers: string[]
+  /**
+   * The last message timestamp that the client has received.
+   * If present, multiple Message packets will be sent to the client.
+   */
+  since?: Date | undefined
 }
 
 export interface Error {
@@ -14,11 +30,14 @@ export interface Error {
 }
 
 function createBaseWebsocketPacket(): WebsocketPacket {
-  return { error: undefined, message: undefined }
+  return { introduction: undefined, error: undefined, message: undefined }
 }
 
 export const WebsocketPacket = {
   encode(message: WebsocketPacket, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.introduction !== undefined) {
+      Introduction.encode(message.introduction, writer.uint32(34).fork()).ldelim()
+    }
     if (message.error !== undefined) {
       Error.encode(message.error, writer.uint32(10).fork()).ldelim()
     }
@@ -35,6 +54,13 @@ export const WebsocketPacket = {
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
+        case 4:
+          if (tag !== 34) {
+            break
+          }
+
+          message.introduction = Introduction.decode(reader, reader.uint32())
+          continue
         case 1:
           if (tag !== 10) {
             break
@@ -60,6 +86,9 @@ export const WebsocketPacket = {
 
   fromJSON(object: any): WebsocketPacket {
     return {
+      introduction: isSet(object.introduction)
+        ? Introduction.fromJSON(object.introduction)
+        : undefined,
       error: isSet(object.error) ? Error.fromJSON(object.error) : undefined,
       message: isSet(object.message) ? Message.fromJSON(object.message) : undefined,
     }
@@ -67,6 +96,9 @@ export const WebsocketPacket = {
 
   toJSON(message: WebsocketPacket): unknown {
     const obj: any = {}
+    if (message.introduction !== undefined) {
+      obj.introduction = Introduction.toJSON(message.introduction)
+    }
     if (message.error !== undefined) {
       obj.error = Error.toJSON(message.error)
     }
@@ -81,6 +113,10 @@ export const WebsocketPacket = {
   },
   fromPartial<I extends Exact<DeepPartial<WebsocketPacket>, I>>(object: I): WebsocketPacket {
     const message = createBaseWebsocketPacket()
+    message.introduction =
+      object.introduction !== undefined && object.introduction !== null
+        ? Introduction.fromPartial(object.introduction)
+        : undefined
     message.error =
       object.error !== undefined && object.error !== null
         ? Error.fromPartial(object.error)
@@ -89,6 +125,82 @@ export const WebsocketPacket = {
       object.message !== undefined && object.message !== null
         ? Message.fromPartial(object.message)
         : undefined
+    return message
+  },
+}
+
+function createBaseIntroduction(): Introduction {
+  return { phoneNumbers: [], since: undefined }
+}
+
+export const Introduction = {
+  encode(message: Introduction, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.phoneNumbers) {
+      writer.uint32(10).string(v!)
+    }
+    if (message.since !== undefined) {
+      Timestamp.encode(toTimestamp(message.since), writer.uint32(18).fork()).ldelim()
+    }
+    return writer
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Introduction {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input)
+    let end = length === undefined ? reader.len : reader.pos + length
+    const message = createBaseIntroduction()
+    while (reader.pos < end) {
+      const tag = reader.uint32()
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break
+          }
+
+          message.phoneNumbers.push(reader.string())
+          continue
+        case 2:
+          if (tag !== 18) {
+            break
+          }
+
+          message.since = fromTimestamp(Timestamp.decode(reader, reader.uint32()))
+          continue
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break
+      }
+      reader.skipType(tag & 7)
+    }
+    return message
+  },
+
+  fromJSON(object: any): Introduction {
+    return {
+      phoneNumbers: globalThis.Array.isArray(object?.phoneNumbers)
+        ? object.phoneNumbers.map((e: any) => globalThis.String(e))
+        : [],
+      since: isSet(object.since) ? fromJsonTimestamp(object.since) : undefined,
+    }
+  },
+
+  toJSON(message: Introduction): unknown {
+    const obj: any = {}
+    if (message.phoneNumbers?.length) {
+      obj.phoneNumbers = message.phoneNumbers
+    }
+    if (message.since !== undefined) {
+      obj.since = message.since.toISOString()
+    }
+    return obj
+  },
+
+  create<I extends Exact<DeepPartial<Introduction>, I>>(base?: I): Introduction {
+    return Introduction.fromPartial(base ?? ({} as any))
+  },
+  fromPartial<I extends Exact<DeepPartial<Introduction>, I>>(object: I): Introduction {
+    const message = createBaseIntroduction()
+    message.phoneNumbers = object.phoneNumbers?.map((e) => e) || []
+    message.since = object.since ?? undefined
     return message
   },
 }
@@ -166,6 +278,28 @@ type KeysOfUnion<T> = T extends T ? keyof T : never
 export type Exact<P, I extends P> = P extends Builtin
   ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never }
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = Math.trunc(date.getTime() / 1_000)
+  const nanos = (date.getTime() % 1_000) * 1_000_000
+  return { seconds, nanos }
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000
+  millis += (t.nanos || 0) / 1_000_000
+  return new globalThis.Date(millis)
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o)
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o))
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined

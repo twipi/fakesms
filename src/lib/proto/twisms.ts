@@ -1,5 +1,6 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal.js"
+import { Timestamp } from "./google/protobuf/timestamp.js"
 
 export const protobufPackage = "twisms"
 
@@ -9,6 +10,8 @@ export interface Message {
   from: string
   /** The phone number of the recipient. */
   to: string
+  /** The time the message was sent. */
+  timestamp: Date | undefined
   /** The body of the message. */
   body: MessageBody | undefined
 }
@@ -43,7 +46,7 @@ export interface MessageFilters {
 }
 
 function createBaseMessage(): Message {
-  return { from: "", to: "", body: undefined }
+  return { from: "", to: "", timestamp: undefined, body: undefined }
 }
 
 export const Message = {
@@ -53,6 +56,9 @@ export const Message = {
     }
     if (message.to !== "") {
       writer.uint32(18).string(message.to)
+    }
+    if (message.timestamp !== undefined) {
+      Timestamp.encode(toTimestamp(message.timestamp), writer.uint32(34).fork()).ldelim()
     }
     if (message.body !== undefined) {
       MessageBody.encode(message.body, writer.uint32(26).fork()).ldelim()
@@ -81,6 +87,13 @@ export const Message = {
 
           message.to = reader.string()
           continue
+        case 4:
+          if (tag !== 34) {
+            break
+          }
+
+          message.timestamp = fromTimestamp(Timestamp.decode(reader, reader.uint32()))
+          continue
         case 3:
           if (tag !== 26) {
             break
@@ -101,6 +114,7 @@ export const Message = {
     return {
       from: isSet(object.from) ? globalThis.String(object.from) : "",
       to: isSet(object.to) ? globalThis.String(object.to) : "",
+      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
       body: isSet(object.body) ? MessageBody.fromJSON(object.body) : undefined,
     }
   },
@@ -112,6 +126,9 @@ export const Message = {
     }
     if (message.to !== "") {
       obj.to = message.to
+    }
+    if (message.timestamp !== undefined) {
+      obj.timestamp = message.timestamp.toISOString()
     }
     if (message.body !== undefined) {
       obj.body = MessageBody.toJSON(message.body)
@@ -126,6 +143,7 @@ export const Message = {
     const message = createBaseMessage()
     message.from = object.from ?? ""
     message.to = object.to ?? ""
+    message.timestamp = object.timestamp ?? undefined
     message.body =
       object.body !== undefined && object.body !== null
         ? MessageBody.fromPartial(object.body)
@@ -402,6 +420,28 @@ type KeysOfUnion<T> = T extends T ? keyof T : never
 export type Exact<P, I extends P> = P extends Builtin
   ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never }
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = Math.trunc(date.getTime() / 1_000)
+  const nanos = (date.getTime() % 1_000) * 1_000_000
+  return { seconds, nanos }
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000
+  millis += (t.nanos || 0) / 1_000_000
+  return new globalThis.Date(millis)
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o)
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o))
+  }
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined
