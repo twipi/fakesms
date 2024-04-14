@@ -2,6 +2,7 @@ import { writable as persisted } from "@macfja/svelte-persistent-store"
 import * as store from "svelte/store"
 import { Message } from "./proto/twisms.js"
 import { WebsocketPacket } from "./proto/wsbridge.js"
+import { ack, nextAckID, waitAck } from "./ack.js"
 import { addToast } from "./toasts.js"
 
 export const selfNumber: string = import.meta.env.VITE_WSBRIDGE_NUMBER_SELF
@@ -18,6 +19,8 @@ function handleEvent(ev: MessageEvent) {
     packet = WebsocketPacket.fromJSON(JSON.parse(ev.data))
   }
 
+  console.debug("received packet", packet)
+
   if (packet.error) {
     console.error("server error", packet.error.message)
     addToast({
@@ -30,13 +33,18 @@ function handleEvent(ev: MessageEvent) {
   }
 
   if (packet.message) {
-    if (packet.message.from !== serverNumber) {
+    const message = packet.message?.message
+    if (!message) {
+      return
+    }
+
+    if (message.from !== serverNumber) {
       console.log("dropping message from unknown number", packet.message)
       return
     }
 
     messages.update((prev) => {
-      const messages = [...prev, packet.message!]
+      const messages = [...prev, message]
       messages.sort((a, b) => {
         const [atime, btime] = [a, b].map((m) => m.timestamp ?? new Date(0))
         return atime.getTime() - btime.getTime()
@@ -46,9 +54,16 @@ function handleEvent(ev: MessageEvent) {
 
     return
   }
+
+  if (packet.messageAcknowledgement) {
+    ack(packet.messageAcknowledgement.acknowledgementId)
+  }
 }
 
-export function sendMessage(text: string) {
+export async function sendMessage(text: string) {
+  const ackID = nextAckID()
+  const ackPromise = waitAck(ackID)
+
   const message = Message.create({
     from: selfNumber,
     to: serverNumber,
@@ -56,8 +71,16 @@ export function sendMessage(text: string) {
       text: { text },
     },
   })
-  const packet = WebsocketPacket.create({ message })
+
+  const packet = WebsocketPacket.create({
+    message: {
+      message,
+      acknowledgementId: ackID,
+    },
+  })
   ws.send(WebsocketPacket.encode(packet).finish())
+
+  await ackPromise
   messages.update((prev) => [...prev, message])
 }
 

@@ -23,9 +23,13 @@
 <style lang="scss">
   .toast {
     padding: calc(var(--pico-spacing) / 2);
+    padding-left: calc(var(--pico-spacing) / 1.5);
     display: flex;
     gap: calc(var(--pico-spacing) / 2);
     border-radius: var(--pico-border-radius);
+
+    width: 100%;
+    max-width: 300px;
 
     &.info {
       background-color: var(--pico-primary-background);
@@ -42,6 +46,8 @@
     }
 
     .content {
+      flex: 1;
+
       h3,
       p {
         font-size: 1em;

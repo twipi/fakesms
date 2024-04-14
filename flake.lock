@@ -66,11 +66,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1713069218,
-        "narHash": "sha256-P54PPOvJn3rGkpyNg01R2QvzZRET5XU6ecVzU0Xro60=",
+        "lastModified": 1713083184,
+        "narHash": "sha256-VD5rlvEeZS6+GmpGMf0uxV/2F3mtdQXi9nJqlLzuNDA=",
         "owner": "twipi",
         "repo": "twipi",
-        "rev": "ad8768621b24e12815953a36b1dad36f2d3436e6",
+        "rev": "e842426bd80d943b348759ee9e927d930ca39723",
         "type": "github"
       },
       "original": {

@@ -14,7 +14,12 @@ export const toasts = writable<Toast[]>([])
 
 // addToast adds a new toast to the toasts store.
 export function addToast(toast: Toast) {
-  toasts.update((prev) => [...prev, { ...toast, id: id++ }])
+  toast = {
+    ...toast,
+    id: id++,
+    title: toast.title ?? (toast.type == "error" ? "Error" : undefined),
+  }
+  toasts.update((prev) => [...prev, toast])
 }
 
 // removeToast removes a toast from the toasts store.
