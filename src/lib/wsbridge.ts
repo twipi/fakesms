@@ -9,9 +9,11 @@ export const selfNumber: string = import.meta.env.VITE_WSBRIDGE_NUMBER_SELF
 export const serverNumber: string = import.meta.env.VITE_WSBRIDGE_NUMBER_SERVER
 
 export const messages = persisted<Message[]>("messages-v1", [])
-export const ws = new WebSocket(import.meta.env.VITE_WSBRIDGE_URL)
 
-function handleEvent(ev: MessageEvent) {
+export const ws = new WebSocket(import.meta.env.VITE_WSBRIDGE_URL)
+ws.binaryType = "arraybuffer"
+
+ws.addEventListener("message", (ev: MessageEvent) => {
   let packet: WebsocketPacket
   if (ev.data instanceof ArrayBuffer) {
     packet = WebsocketPacket.decode(new Uint8Array(ev.data))
@@ -56,9 +58,9 @@ function handleEvent(ev: MessageEvent) {
   }
 
   if (packet.messageAcknowledgement) {
-    ack(packet.messageAcknowledgement.acknowledgementId)
+    ack(packet.messageAcknowledgement)
   }
-}
+})
 
 export async function sendMessage(text: string) {
   const ackID = nextAckID()
@@ -70,6 +72,7 @@ export async function sendMessage(text: string) {
     body: {
       text: { text },
     },
+    timestamp: new Date(),
   })
 
   const packet = WebsocketPacket.create({
@@ -78,25 +81,26 @@ export async function sendMessage(text: string) {
       acknowledgementId: ackID,
     },
   })
+  console.debug("sending message", packet)
   ws.send(WebsocketPacket.encode(packet).finish())
 
-  await ackPromise
+  const ack = await ackPromise
+  message.timestamp = ack.timestamp
   messages.update((prev) => [...prev, message])
 }
 
-ws.binaryType = "blob"
-ws.addEventListener("message", handleEvent)
-
 ws.addEventListener("open", () => {
   const messageList = store.get(messages)
-  const lastSeen = messageList[messageList.length - 1]?.timestamp
+  const lastSeen = messageList[messageList.length - 1]?.timestamp ?? new Date(0)
 
   const packet = WebsocketPacket.create({
     introduction: {
       phoneNumbers: [selfNumber],
       since: lastSeen,
+      canAcknowledge: true,
     },
   })
+  console.debug("sending introduction", packet)
   ws.send(WebsocketPacket.encode(packet).finish())
 })
 

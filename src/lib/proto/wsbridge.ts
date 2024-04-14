@@ -24,6 +24,14 @@ export interface Introduction {
    * If present, multiple Message packets will be sent to the client.
    */
   since?: Date | undefined
+  /**
+   * Whether the client can acknowledge messages.
+   * The server should not waste time waiting for an acknowledgement if this is
+   * not true.
+   * Note that servers always have to acknowledge messages. The wsbridge server
+   * implementation will always acknowledge messages.
+   */
+  canAcknowledge: boolean
 }
 
 export interface Error {
@@ -43,6 +51,12 @@ export interface MessageAcknowledgement {
    * The same exact string is echoed back from SendMessage.
    */
   acknowledgementId: string
+  /**
+   * The timestamp of the message that the client is acknowledging.
+   * This may be overwritten by the server and may not be the same as the
+   * original message's timestamp.
+   */
+  timestamp: Date | undefined
 }
 
 function createBaseWebsocketPacket(): WebsocketPacket {
@@ -174,7 +188,7 @@ export const WebsocketPacket = {
 }
 
 function createBaseIntroduction(): Introduction {
-  return { phoneNumbers: [], since: undefined }
+  return { phoneNumbers: [], since: undefined, canAcknowledge: false }
 }
 
 export const Introduction = {
@@ -184,6 +198,9 @@ export const Introduction = {
     }
     if (message.since !== undefined) {
       Timestamp.encode(toTimestamp(message.since), writer.uint32(18).fork()).ldelim()
+    }
+    if (message.canAcknowledge !== false) {
+      writer.uint32(24).bool(message.canAcknowledge)
     }
     return writer
   },
@@ -209,6 +226,13 @@ export const Introduction = {
 
           message.since = fromTimestamp(Timestamp.decode(reader, reader.uint32()))
           continue
+        case 3:
+          if (tag !== 24) {
+            break
+          }
+
+          message.canAcknowledge = reader.bool()
+          continue
       }
       if ((tag & 7) === 4 || tag === 0) {
         break
@@ -224,6 +248,9 @@ export const Introduction = {
         ? object.phoneNumbers.map((e: any) => globalThis.String(e))
         : [],
       since: isSet(object.since) ? fromJsonTimestamp(object.since) : undefined,
+      canAcknowledge: isSet(object.canAcknowledge)
+        ? globalThis.Boolean(object.canAcknowledge)
+        : false,
     }
   },
 
@@ -235,6 +262,9 @@ export const Introduction = {
     if (message.since !== undefined) {
       obj.since = message.since.toISOString()
     }
+    if (message.canAcknowledge !== false) {
+      obj.canAcknowledge = message.canAcknowledge
+    }
     return obj
   },
 
@@ -245,6 +275,7 @@ export const Introduction = {
     const message = createBaseIntroduction()
     message.phoneNumbers = object.phoneNumbers?.map((e) => e) || []
     message.since = object.since ?? undefined
+    message.canAcknowledge = object.canAcknowledge ?? false
     return message
   },
 }
@@ -386,13 +417,16 @@ export const Message = {
 }
 
 function createBaseMessageAcknowledgement(): MessageAcknowledgement {
-  return { acknowledgementId: "" }
+  return { acknowledgementId: "", timestamp: undefined }
 }
 
 export const MessageAcknowledgement = {
   encode(message: MessageAcknowledgement, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.acknowledgementId !== "") {
       writer.uint32(10).string(message.acknowledgementId)
+    }
+    if (message.timestamp !== undefined) {
+      Timestamp.encode(toTimestamp(message.timestamp), writer.uint32(18).fork()).ldelim()
     }
     return writer
   },
@@ -411,6 +445,13 @@ export const MessageAcknowledgement = {
 
           message.acknowledgementId = reader.string()
           continue
+        case 2:
+          if (tag !== 18) {
+            break
+          }
+
+          message.timestamp = fromTimestamp(Timestamp.decode(reader, reader.uint32()))
+          continue
       }
       if ((tag & 7) === 4 || tag === 0) {
         break
@@ -425,6 +466,7 @@ export const MessageAcknowledgement = {
       acknowledgementId: isSet(object.acknowledgementId)
         ? globalThis.String(object.acknowledgementId)
         : "",
+      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
     }
   },
 
@@ -432,6 +474,9 @@ export const MessageAcknowledgement = {
     const obj: any = {}
     if (message.acknowledgementId !== "") {
       obj.acknowledgementId = message.acknowledgementId
+    }
+    if (message.timestamp !== undefined) {
+      obj.timestamp = message.timestamp.toISOString()
     }
     return obj
   },
@@ -446,6 +491,7 @@ export const MessageAcknowledgement = {
   ): MessageAcknowledgement {
     const message = createBaseMessageAcknowledgement()
     message.acknowledgementId = object.acknowledgementId ?? ""
+    message.timestamp = object.timestamp ?? undefined
     return message
   },
 }
