@@ -259,6 +259,7 @@
 
       p {
         margin: 0;
+        white-space: break-spaces;
       }
 
       &.self {
