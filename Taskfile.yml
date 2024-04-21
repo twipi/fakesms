@@ -2,10 +2,11 @@ version: "3"
 
 set: [pipefail, errexit, nounset]
 
-vars:
+env:
   WSBRIDGE_URL: ws://localhost:8080/sms/ws
   WSBRIDGE_NUMBER_SELF: +11234567890
   WSBRIDGE_NUMBER_SERVER: +19876543210
+  PORT: 5000
 
 tasks:
   default:
@@ -18,7 +19,7 @@ tasks:
       VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
       VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
-      - vite --clearScreen=false
+      - vite --clearScreen=false --port={{ .PORT }}
 
   build:
     deps: [generate-ts-proto]
