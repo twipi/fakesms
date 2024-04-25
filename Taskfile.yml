@@ -19,7 +19,7 @@ tasks:
       VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
       VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
-      - vite --clearScreen=false --port={{ .PORT }}
+      - vite --clearScreen=false --port="$PORT"
 
   build:
     deps: [generate-ts-proto]
