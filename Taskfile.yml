@@ -3,10 +3,13 @@ version: "3"
 set: [pipefail, errexit, nounset]
 
 vars:
-  WSBRIDGE_URL: ws://localhost:8080/sms/ws
-  WSBRIDGE_NUMBER_SELF: +11234567890
-  WSBRIDGE_NUMBER_SERVER: +19876543210
-  PORT: 5000
+  PORT: '{{ .PORT | default "5000" }}'
+
+requires:
+  vars:
+    - WSBRIDGE_URL
+    - WSBRIDGE_NUMBER_SELF
+    - WSBRIDGE_NUMBER_SERVER
 
 tasks:
   default:
