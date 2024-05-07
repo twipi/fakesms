@@ -22,6 +22,7 @@ tasks:
       VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
       VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
+      - env | grep ^VITE_
       - vite --clearScreen=false --port="$PORT"
 
   build:
