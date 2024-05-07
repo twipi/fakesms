@@ -2,7 +2,7 @@ version: "3"
 
 set: [pipefail, errexit, nounset]
 
-env:
+vars:
   WSBRIDGE_URL: ws://localhost:8080/sms/ws
   WSBRIDGE_NUMBER_SELF: +11234567890
   WSBRIDGE_NUMBER_SERVER: +19876543210
