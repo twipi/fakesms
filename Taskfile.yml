@@ -3,6 +3,7 @@ version: "3"
 set: [pipefail, errexit, nounset]
 
 vars:
+  HOST: '{{ .HOST | default "localhost" }}'
   PORT: '{{ .PORT | default "5000" }}'
 
 requires:
@@ -23,7 +24,7 @@ tasks:
       VITE_WSBRIDGE_NUMBER_SERVER: "{{ .WSBRIDGE_NUMBER_SERVER }}"
     cmds:
       - env | grep ^VITE_
-      - vite --clearScreen=false --port="$PORT"
+      - vite --clearScreen=false --host="$HOST" --port="$PORT"
 
   build:
     deps: [node_modules, generate-ts-proto]
