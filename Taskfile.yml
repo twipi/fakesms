@@ -2,7 +2,7 @@ version: "3"
 
 set: [pipefail, errexit, nounset]
 
-vars:
+env:
   WSBRIDGE_URL: ws://localhost:8080/sms/ws
   WSBRIDGE_NUMBER_SELF: +11234567890
   WSBRIDGE_NUMBER_SERVER: +19876543210
@@ -13,7 +13,7 @@ tasks:
     deps: [dev]
 
   dev:
-    deps: [generate-ts-proto]
+    deps: [node_modules, generate-ts-proto]
     env:
       VITE_WSBRIDGE_URL: "{{ .WSBRIDGE_URL }}"
       VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
@@ -22,7 +22,7 @@ tasks:
       - vite --clearScreen=false --port="$PORT"
 
   build:
-    deps: [generate-ts-proto]
+    deps: [node_modules, generate-ts-proto]
     env:
       VITE_WSBRIDGE_URL: "{{ .WSBRIDGE_URL }}"
       VITE_WSBRIDGE_NUMBER_SELF: "{{ .WSBRIDGE_NUMBER_SELF }}"
@@ -36,6 +36,7 @@ tasks:
       vars: [PROTO_PATH]
     status:
       - grep -q "$PROTO_PATH" "$TASK_TEMP_DIR"/proto_path
+    deps: [node_modules]
     cmds:
       - for:
           var: PROTO_PATH
@@ -51,3 +52,12 @@ tasks:
       - echo "$PROTO_PATH" > "$TASK_TEMP_DIR"/proto_path
     generates:
       - src/lib/proto/*.ts
+
+  node_modules:
+    cmds:
+      - npm install
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules
